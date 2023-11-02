@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-kubernetes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: laravel-kubernetes
+  template:
+    metadata:
+      labels:
+        app: laravel-kubernetes
+    spec:
+      containers:
+      - name: laravel-kubernetes-demo
+        image: mchengsplunk/laravel-kubernetes-demo:v2
+        ports:
+          - containerPort: 80
+        env:
+          - name: APP_KEY
+            value: "base64:cUPmwHx4LXa4Z25HhzFiWCf7TlQmSqnt98pnuiHmzgY="
+          - name: OTEL_AGENT_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: SIGNALFX_SERVICE_NAME
+            value: "php-demo"
+          - name: SIGNALFX_ENDPOINT_URL
+            value: "http://$(OTEL_AGENT_IP):9080/v1/trace"
+          - name: SIGNALFX_TRACE_GLOBAL_TAGS
+            value: "deployment.environment:dev"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: laravel-kubernetes-service
+spec:
+  selector:
+    app: laravel-kubernetes
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: NodePort
